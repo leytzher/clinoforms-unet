@@ -6,30 +6,25 @@ import torch
 from torchvision import models
 import torchvision
 
-# Load VGG11
-vgg11 = models.vgg11(pretrained='imagenet')
-
-
-
-print(vgg11)
 
 class UnetVGG(nn.Module):
-    def __init__(self, num_filters=32):
+    def __init__(self):
         super().__init__()
-
-        self.encoder = vgg11.features
+        # Load VGG11
+        vgg11 = models.vgg11(pretrained=True)
+        encoder = vgg11.features
 
         # Build encoding path based on VGG11:
-        self.convblock_0 = self.encoder[0:2]   # 256x1216 (64)
-        self.pool0 = self.encoder[2]           # 128x608 (64)
-        self.convblock_1 = self.encoder[3:5]   # 128x608 (128)
-        self.pool1 = self.encoder[5]           # 64x304 (128)
-        self.convblock_2 = self.encoder[6:10]  # 64x304 (256)
-        self.pool2 = self.encoder[10]          # 32x152 (256)
-        self.convblock_3 = self.encoder[11:15] # 32x152 (512)
-        self.pool3 = self.encoder[15]          # 16x76 (512)
-        self.convblock_4 = self.encoder[16:20] # 16x76 (512)
-        self.pool4 = self.encoder[20]          # 8x38 (512)
+        self.convblock_0 = encoder[0:2]   # 256x1216 (64)
+        self.pool0 = encoder[2]           # 128x608 (64)
+        self.convblock_1 = encoder[3:5]   # 128x608 (128)
+        self.pool1 = encoder[5]           # 64x304 (128)
+        self.convblock_2 = encoder[6:10]  # 64x304 (256)
+        self.pool2 = encoder[10]          # 32x152 (256)
+        self.convblock_3 = encoder[11:15] # 32x152 (512)
+        self.pool3 = encoder[15]          # 16x76 (512)
+        self.convblock_4 = encoder[16:20] # 16x76 (512)
+        self.pool4 = encoder[20]          # 8x38 (512)
         # 
         # Bottleneck layer (make 2 convolutions)
         self.convblock_5 = nn.Sequential(
@@ -108,62 +103,63 @@ class UnetVGG(nn.Module):
         self.final = nn.Sequential(
              nn.Sigmoid(),
          )
+
     
     def forward(self,x):
         # Propagate through the network:
-        print(f"original image {x.shape}")
+        #print(f"original image {x.shape}")
         x = self.convblock_0(x)
         conv0_out = x
         conv0_dim_h = x.shape[2]
         conv0_dim_w = x.shape[3]
-        print(f"convblock_0 {x.shape}")
+        #print(f"convblock_0 {x.shape}")
 
         x = self.pool0(x)
-        print(f"pool0 {x.shape}")
+        #print(f"pool0 {x.shape}")
         x = self.convblock_1(x)
         conv1_out = x
         conv1_dim_h = x.shape[2]
         conv1_dim_w = x.shape[3]
-        print(f"convblock_1 {x.shape}")
+        #print(f"convblock_1 {x.shape}")
 
         x = self.pool1(x)
-        print(f"pool1 {x.shape}")
+        #print(f"pool1 {x.shape}")
 
         x = self.convblock_2(x)
         conv2_out = x
         conv2_dim_h = x.shape[2]
         conv2_dim_w = x.shape[3]
-        print(f"convblock_2 {x.shape}")
+        #print(f"convblock_2 {x.shape}")
 
         x = self.pool2(x)
-        print(f"pool2 {x.shape}")
+        #print(f"pool2 {x.shape}")
 
         x = self.convblock_3(x)
         conv3_out = x
         conv3_dim_h = x.shape[2]
         conv3_dim_w = x.shape[3]
-        print(f"convblock_3 {x.shape}")
+        #print(f"convblock_3 {x.shape}")
 
         x = self.pool3(x)
-        print(f"pool3 {x.shape}")
+        #print(f"pool3 {x.shape}")
 
         x = self.convblock_4(x)
         conv4_out = x
         conv4_dim_h = x.shape[2]
         conv4_dim_w = x.shape[3]
-        print(f"convblock_4 {x.shape}")
+        #print(f"convblock_4 {x.shape}")
 
 
         x = self.pool4(x)
-        print(f"pool4 {x.shape}")
+        #print(f"pool4 {x.shape}")
 
         x = self.convblock_5(x)
-        print(f"convblock_5 {x.shape}")
+        #print(f"convblock_5 {x.shape}")
 
         # Moving up
         x = self.up_0(x)
-        print("****************")
-        print(f"up_0 {x.shape}")
+        #print("****************")
+        #print(f"up_0 {x.shape}")
 
         lower_h = int((conv4_dim_h - x.shape[2])/2)
         upper_h = int((conv4_dim_h - lower_h))
@@ -172,10 +168,10 @@ class UnetVGG(nn.Module):
         conv4_out_modified = conv4_out[:,:,lower_h:upper_h,lower_w:upper_w]
         x = torch.cat([x,conv4_out_modified], dim=1)
         x = self.conv_up_0(x)
-        print(f"conv_up_0 {x.shape}")
+        #print(f"conv_up_0 {x.shape}")
 
         x = self.up_1(x)
-        print(f"up_1 {x.shape}")
+        #print(f"up_1 {x.shape}")
 
         lower_h = int((conv3_dim_h - x.shape[2])/2)
         upper_h = int((conv3_dim_h - lower_h))
@@ -183,12 +179,12 @@ class UnetVGG(nn.Module):
         upper_w = int((conv3_dim_w - lower_w))
         conv3_out_modified = conv3_out[:,:,lower_h:upper_h,lower_w:upper_w]
         x = torch.cat([x,conv3_out_modified], dim=1)
-        print(x.shape)
+        #print(x.shape)
         x = self.conv_up_1(x)
-        print(f"conv_up_1 {x.shape}")
+        #print(f"conv_up_1 {x.shape}")
 
         x = self.up_2(x)
-        print(f"up_2 {x.shape}")
+        #print(f"up_2 {x.shape}")
 
         lower_h = int((conv2_dim_h - x.shape[2])/2)
         upper_h = int((conv2_dim_h - lower_h))
@@ -197,10 +193,10 @@ class UnetVGG(nn.Module):
         conv2_out_modified = conv2_out[:,:,lower_h:upper_h,lower_w:upper_w]
         x = torch.cat([x,conv2_out_modified], dim=1)
         x = self.conv_up_2(x)
-        print(f"conv_up_2 {x.shape}")
+        #print(f"conv_up_2 {x.shape}")
 
         x = self.up_3(x)
-        print(f"up_3 {x.shape}")
+        #print(f"up_3 {x.shape}")
 
         lower_h = int((conv1_dim_h - x.shape[2])/2)
         upper_h = int((conv1_dim_h - lower_h))
@@ -209,10 +205,10 @@ class UnetVGG(nn.Module):
         conv1_out_modified = conv1_out[:,:,lower_h:upper_h,lower_w:upper_w]
         x = torch.cat([x,conv1_out_modified], dim=1)
         x = self.conv_up_3(x)
-        print(f"conv_up_3 {x.shape}")
+        #print(f"conv_up_3 {x.shape}")
 
         x = self.up_4(x)
-        print(f"up_3 {x.shape}")
+        #print(f"up_3 {x.shape}")
 
         lower_h = int((conv0_dim_h - x.shape[2])/2)
         upper_h = int((conv0_dim_h - lower_h))
@@ -221,13 +217,13 @@ class UnetVGG(nn.Module):
         conv0_out_modified = conv0_out[:,:,lower_h:upper_h,lower_w:upper_w]
         x = torch.cat([x,conv0_out_modified], dim=1)
         x = self.conv_up_4(x)   
-        print(f"conv_up_4 {x.shape}")
+        #print(f"conv_up_4 {x.shape}")
 
         x = self.conv_final(x)
-        print(f"conv_final {x.shape}")
+        #print(f"conv_final {x.shape}")
 
         x = self.final(x)
-        print(f"final {x.shape}")
+        #print(f"final {x.shape}")
 
 
         return x
@@ -236,10 +232,16 @@ class UnetVGG(nn.Module):
 
 
 
-model = UnetVGG()
-im = torch.randn(1,3,256,1216)
-x = model(im)
-print(x)
-print(x.shape)
-
+# model = UnetVGG()
+# im = torch.randn(1,3,256,1216)
+# x = model(im)
+# print(x)
+# print(x.shape)
+# print("***************************")
+# cnt = 0
+# for child in model.children():
+#     if cnt < 10:
+#         for param in child.parameters():
+#             param.requires_grad = False
+#     cnt+=1
 

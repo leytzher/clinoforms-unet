@@ -11,7 +11,7 @@ import re
 import os
 import random
 from random import randint
-from torchvision import models
+from torchvision import models, transforms
 import torchvision
 
 
@@ -98,20 +98,21 @@ class SeismicData(data.Dataset):
             img = cv2.flip(img,1)
             mask = cv2.flip(mask,1)
         
-        addNoise = randint(0,2)
-        if addNoise == 1:  ## Add some gaussian noise
-            img = gaussian_noise(img)
-        elif addNoise == 2:  # Add salt/pepper noise
-            img = sp_noise(img,0.05)
+        # addNoise = randint(0,2)
+        # if addNoise == 1:  ## Add some gaussian noise
+        #     img = gaussian_noise(img)
+        # elif addNoise == 2:  # Add salt/pepper noise
+        #     img = sp_noise(img,0.05)
                  
         
         
-        img_as_tensor = torch.from_numpy(img).int()
+        img_as_tensor = torch.from_numpy(img)
         mask_as_tensor = torch.from_numpy(mask).int()
         
         # Reshape to (ch,h,w)
-        img_as_tensor = torch.reshape(img_as_tensor,(1,img_as_tensor.shape[0],img_as_tensor.shape[1]))
+        img_as_tensor = torch.reshape(img_as_tensor,(3,img_as_tensor.shape[0],img_as_tensor.shape[1]))
         mask_as_tensor = torch.reshape(mask_as_tensor,(1,mask_as_tensor.shape[0],mask_as_tensor.shape[1]))
+
         
         # Normalize image
         # Note. The model expects 3-channel RGB images of shape (3xHxW) where H and W are at least 224.
@@ -120,8 +121,7 @@ class SeismicData(data.Dataset):
         # Use the following code to normalize:
         # normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        img_as_tensor = normalize(img_as_tensor)
-        
+        img_as_tensor = normalize(img_as_tensor.float())
 #         plt.imshow(img)
 #         plt.show()
 #         plt.imshow(mask)

@@ -1,2 +1,3 @@
 from .seismicData import SeismicData 
-from .nnet import UNet16
+from .nnet import UnetVGG
+from .losses import *
